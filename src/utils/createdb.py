@@ -16,8 +16,7 @@ async def create_db():
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS bookings(
-    time TEXT,
-    vid, TEXT);
+    time TEXT);
     """
     )
 
