@@ -9,7 +9,7 @@ async def timebuttons():
     else:
         hour = int(datetime.now().hour)
 
-    #hour = 11
+    # hour = 11
 
     btime = []
 
@@ -28,9 +28,8 @@ async def timebuttons():
         if (av[0][1] + av[1][1] < 30) & (av[1][1] + av[2][1] < 30):
             btime.append(str(av[1][0]) + ":00")
 
-
     if len(btime) == 0:
-        return ['Full']
+        return ["Full"]
 
     if hour == 16 or hour == 17:
         try:
@@ -56,21 +55,17 @@ async def bookingDB(txt, vk_id):
         "UPDATE availability SET amount = ? WHERE time = ?", (av[0][1] + 1, av[0][0])
     )
 
-    cursor.execute(
-        "INSERT INTO bookings(time, vid) VALUES(?, ?);", (txt, vk_id)
-    )
+    cursor.execute("INSERT INTO bookings(time, vid) VALUES(?, ?);", (txt, vk_id))
 
     conn.commit()
     conn.close()
 
+
 async def bookingCheck(time, vk_id):
-    
     conn = sqlite3.connect("booking.db")
     cursor = conn.cursor()
 
-    bk = cursor.execute(
-        "SELECT * FROM bookings;"
-    ).fetchall()
+    bk = cursor.execute("SELECT * FROM bookings;").fetchall()
 
     conn.commit()
     conn.close()
@@ -79,7 +74,7 @@ async def bookingCheck(time, vk_id):
     print(bk)
 
     for i in bk:
-        if (str(vk_id) == i[1] and time == i[0]):
+        if str(vk_id) == i[1] and time == i[0]:
             return True
         else:
             return False

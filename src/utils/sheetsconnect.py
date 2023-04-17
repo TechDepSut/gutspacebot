@@ -17,15 +17,15 @@ async def get_rec(time, wks):
 
 
 # async def bookingCheck(time, vk_id):
-    # wks = sh.worksheet_by_title("VK_ID")
-    # rec_col = await get_rec(time, wks)
-# 
-    # if vk_id in rec_col:
-        # return True
-# 
-    # wks.update_value(f"{time_voc.get(time)}{len(rec_col)+2}", vk_id)
-# 
-    # return False
+# wks = sh.worksheet_by_title("VK_ID")
+# rec_col = await get_rec(time, wks)
+#
+# if vk_id in rec_col:
+# return True
+#
+# wks.update_value(f"{time_voc.get(time)}{len(rec_col)+2}", vk_id)
+#
+# return False
 
 
 async def person_add(time, name):

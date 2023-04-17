@@ -1,11 +1,12 @@
 import os
 from asyncio import sleep
-from vkbottle import Bot, Keyboard, Text, API
+from vkbottle import Bot, Keyboard, Text, API, LoopWrapper
 from vkbottle import BaseStateGroup, KeyboardButtonColor
 from vkbottle.bot import Message
 from utils.bookingtime import *
 from utils.sheetsconnect import *
 from utils.keyaboard import main_keyboard
+from utils.createdb import create_db
 
 bot = Bot(os.environ["token"])
 api = API(token=os.environ["token"])
@@ -41,7 +42,7 @@ async def time(m: Message) -> None:
             keyboard=main_keyboard,
         )
         await bot.state_dispenser.set(m.peer_id, Branch.HELLO, name=str(m.text))
-    elif btime[0] == 'Full':
+    elif btime[0] == "Full":
         await m.answer(
             "Кажется у нас аншлаг🙊\n\nК сожалению, все места на ближайшие сеансы уже заняты. Возвращайся чуть позже и забирай свое место в SutSpace!",
             keyboard=main_keyboard,
@@ -99,4 +100,7 @@ async def notification(peer):
 
 
 if __name__ == "__main__":
-    bot.run_forever()
+    lw = LoopWrapper()
+    lw.on_startup.append(create_db())
+    lw.add_task(bot.run_polling())
+    lw.run_forever()
