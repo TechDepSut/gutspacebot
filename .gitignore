@@ -4,3 +4,4 @@
 config.txt
 test.py
 booking.db
+/src/booking.db
