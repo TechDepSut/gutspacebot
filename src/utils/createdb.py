@@ -8,6 +8,12 @@ async def create_db():
 
     cursor.execute(
         """
+        DROP TABLE availability;
+        """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS availability(
         time INTEGER,
         amount INTEGER);
@@ -19,6 +25,14 @@ async def create_db():
     time TEXT,
     vid TEXT);
     """
+    )
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS users(
+        vid TEXT,
+        name TEXT
+        );
+        """
     )
 
     cursor.execute(

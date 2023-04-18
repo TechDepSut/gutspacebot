@@ -5,7 +5,7 @@ from vkbottle import BaseStateGroup, KeyboardButtonColor
 from vkbottle.bot import Message
 from utils.bookingtime import *
 from utils.sheetsconnect import *
-from utils.keyaboard import main_keyboard
+from utils.keyaboard import main_keyboard, error_keyboard
 from utils.createdb import create_db
 
 bot = Bot(os.environ["token"])
@@ -13,28 +13,32 @@ api = API(token=os.environ["token"])
 
 
 class Branch(BaseStateGroup):
-    HELLO = 0
-    BOOKING = 1
-    QUESTION = 2
-    BOOKINGEND = 3
+    REG = 0
+    HELLO = 1
+    BOOKING = 2
+    QUESTION = 3
+    BOOKINGEND = 4
+    ERROR = 5
 
 
 @bot.on.message(text="Начать")
 async def start(m: Message) -> None:
-    await m.answer("Выбери действие", keyboard=main_keyboard)
+    if await checkReg(m.peer_id):
+        await m.answer("Для посещения коворкинга необходимо пройти регистрацию. Пожалуйста, введи свое ФИО")
+        await bot.state_dispenser.set(m.peer_id, Branch.REG)
+    else:
+        await m.answer("Выбери действие", keyboard=main_keyboard)
+        await bot.state_dispenser.set(m.peer_id, Branch.HELLO)
+
+@bot.on.message(state=Branch.REG)
+async def start(m: Message) -> None:
+    await registration(m.peer_id, m.text)
+    await m.answer("Ты успешно зарегистрирован в системе. Выбери действие", keyboard=main_keyboard)
     await bot.state_dispenser.set(m.peer_id, Branch.HELLO)
 
 
 @bot.on.message(state=Branch.HELLO, text="Бронь")
 async def reg(m: Message) -> None:
-    await m.answer(
-        "Для посещения коворкинга необходимо пройти регистрацию.\n\nНо перед этим я познакомлю тебя с некоторыми правилами бронирования места:\n 1.Сеанс в коворкинге длится 2 часа\n 2.Нельзя забронировать новый сеанс, пока не истекло время текущего\n3. Забронировать место в коворкинге можно только в его рабочие часы: с 10 до 18\n\nЧтобы продолжить регистрацию, введи ФИО."
-    )
-    await bot.state_dispenser.set(m.peer_id, Branch.BOOKING)
-
-
-@bot.on.message(state=Branch.BOOKING)
-async def time(m: Message) -> None:
     btime = await timebuttons()
     if len(btime) == 0:
         await m.answer(
@@ -53,26 +57,39 @@ async def time(m: Message) -> None:
         for i in btime:
             keyboard.add(Text(i), color=KeyboardButtonColor.PRIMARY)
         await m.answer(
-            "Отлично! Теперь выбери удобное время для сеанса:",
+            "Перед тем, как ты выберешь время, я познакомлю тебя с некоторыми правилами бронирования места:\n 1.Сеанс в коворкинге длится 2 часа\n 2.Нельзя забронировать новый сеанс, пока не истекло время текущего\n3. Забронировать место в коворкинге можно только в его рабочие часы: с 10 до 18\n\n Теперь выбери удобное время для сеанса",
             keyboard=keyboard,
         )
-        await bot.state_dispenser.set(m.peer_id, Branch.BOOKINGEND, name=str(m.text))
+        await bot.state_dispenser.set(m.peer_id, Branch.BOOKINGEND)
 
 
 @bot.on.message(state=Branch.BOOKINGEND)
 async def bookingComplete(m: Message):
     if await bookingCheck(m.text, m.peer_id):
-        await m.answer("Ты уже зарегистрирован на это время", keyboard=main_keyboard)
-        await bot.state_dispenser.set(m.peer_id, Branch.HELLO)
+        await m.answer("Вы уже записаны на этот сеанс", keyboard=error_keyboard)
+        await bot.state_dispenser.set(m.peer_id, Branch.ERROR, time=str(m.text))
     else:
         await m.answer(
             "Ждем тебя в SutSpace!\n\nЗа 15 минут до окончания твоего сеанса я пришлю тебе напоминание💙",
             keyboard=main_keyboard,
         )
         await bookingDB(m.text, m.peer_id)
-        await person_add(m.text, m.state_peer.payload["name"])
+        await person_add(m.text, m.peer_id)
         await bot.state_dispenser.set(m.peer_id, Branch.HELLO)
         await notification(m.peer_id)
+
+@bot.on.message(state=Branch.ERROR, text="Отменить бронь")
+async def booking_error(m: Message):
+    
+    await bookingDelete(m.peer_id, m.state_peer.payload["time"])
+    await sheetBookingDelete(m.peer_id, m.state_peer.payload["time"])
+    await m.answer("Бронь успешно отменена", keyboard=main_keyboard)
+    await bot.state_dispenser.set(m.peer_id, Branch.HELLO)
+
+@bot.on.message(state=Branch.ERROR, text="Назад")
+async def back(m: Message):
+    await m.answer("Выберите действие", keyboard=main_keyboard)
+    await bot.state_dispenser.set(m.peer_id, Branch.HELLO)
 
 
 @bot.on.message(state=Branch.HELLO, text="Задать вопрос")
